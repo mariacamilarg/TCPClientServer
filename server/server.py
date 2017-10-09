@@ -1,46 +1,59 @@
 #!/usr/bin/env python
 
-import socket
+import os, socketserver
 import protocol_server as ps
 
-TCP_IP = '127.0.0.1'
-TCP_PORT = 5005
-BUFFER_SIZE = 64  # Normally 1024, but we want fast response
+class MyTCPHandler(socketserver.BaseRequestHandler):
+    """
+    The request handler class for our server.
 
-def send_to_client(cnn, msg):
-    conn.send(msg.encode())
-    print("> SERVER:", msg)
+    It is instantiated once per connection to the server, and must
+    override the handle() method to implement communication to the
+    client.
+    """
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.bind((TCP_IP, TCP_PORT))
-s.listen(1)
-print("Waiting for connections...")
+    def handle(self):
 
-# conn is a new socket object usable to send and receive data on the connection
-# addr is the address bound to the socket on the other end of the connection
-conn, addr = s.accept()
-print('Connection created:', addr)
+        BUFFER_SIZE = 64
 
-while True:
-    data = conn.recv(BUFFER_SIZE)
-    data_d = data.decode()
-    print("< CLIENT:", data_d)
+        def send_to_client(cnn, msg):
+            conn.send(msg.encode())
+            print("> Server:", msg)
 
-    if data_d == ps.START:
-        files = ['1.txt', '2.txt', '3.txt', '4.txt', '5.txt']
-        send_to_client(conn, str(files))
-    elif data_d == ps.SEND_FILE:
-        filename = conn.recv(BUFFER_SIZE)
-        filename_d = filename.decode()
-        print("< CLIENT:", filename_d)
-        desired_file = "File..."
-        desired_file_size = len(desired_file.encode('utf-8'))
-        send_to_client(conn, ps.START_OF_FILE + ":" + str(desired_file_size))
-        print("< CLIENT:", conn.recv(BUFFER_SIZE).decode())
-        send_to_client(conn, desired_file)
-    elif data_d == ps.END:
-        break
-    elif not data:
-        break
+        # self.request is the TCP socket connected to the client
+        conn = self.request
+        print('Connection created with client')
 
-conn.close()
+        while True:
+            data = conn.recv(BUFFER_SIZE)
+            data_d = data.decode()
+            print("< Client:", data_d)
+
+            if data_d == ps.START:
+                files = os.listdir("./files/")
+                send_to_client(conn, str(files))
+            elif data_d == ps.SEND_FILE:
+                filename = conn.recv(BUFFER_SIZE)
+                filename_d = filename.decode()
+                print("< Client:", filename_d)
+                desired_file = "File..."
+                desired_file_size = len(desired_file.encode('utf-8'))
+                send_to_client(conn, ps.START_OF_FILE + ":" + str(desired_file_size))
+                print("< Client:", conn.recv(BUFFER_SIZE).decode())
+                send_to_client(conn, desired_file)
+            elif data_d == ps.END:
+                break
+            elif not data:
+                break
+
+if __name__ == "__main__":
+
+    TCP_IP = '127.0.0.1'
+    TCP_PORT = 5005
+
+    # Create the server, binding to localhost on port 9999
+    with socketserver.TCPServer((TCP_IP, TCP_PORT), MyTCPHandler) as server:
+        # Activate the server; this will keep running until you
+        # interrupt the program with Ctrl-C
+        print("Waiting for connections...")
+        server.serve_forever()
