@@ -15,9 +15,10 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
     def handle(self):
 
         BUFFER_SIZE = 64
+        files_sizes = {'tiny.txt':184, 'small.txt':5120, 'medium.txt':20480, 'big.txt':51200}
 
         def send_to_client(cnn, msg):
-            conn.send(msg.encode())
+            cnn.send(msg.encode())
             print("> Server:", msg)
 
         # self.request is the TCP socket connected to the client
@@ -36,11 +37,12 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
                 filename = conn.recv(BUFFER_SIZE)
                 filename_d = filename.decode()
                 print("< Client:", filename_d)
-                desired_file = "File..."
-                desired_file_size = len(desired_file.encode('utf-8'))
+                desired_file_size = files_sizes[filename_d]
+                desired_file = open('./files/'+filename_d, 'rb') #open in binary
                 send_to_client(conn, ps.START_OF_FILE + ":" + str(desired_file_size))
                 print("< Client:", conn.recv(BUFFER_SIZE).decode())
-                send_to_client(conn, desired_file)
+                conn.sendall(desired_file.read())
+                print("> Server: File sent")
             elif data_d == ps.END:
                 break
             elif not data:
@@ -49,7 +51,7 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
 if __name__ == "__main__":
 
     TCP_IP = '127.0.0.1'
-    TCP_PORT = 5005
+    TCP_PORT = 5006
 
     # Create the server, binding to localhost on port 9999
     with socketserver.TCPServer((TCP_IP, TCP_PORT), MyTCPHandler) as server:
