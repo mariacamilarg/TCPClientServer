@@ -15,10 +15,25 @@ def save_file(content, fname):
     new_file = open('./files/'+fname, "wb")
     new_file.write(content)
     new_file.close()
-    print("< Server: File received")
+    print("< Server: File sent")
+
+def receive_file(sckt, fs):
+    num = fs//BUFFER_SIZE + 1
+    data = b''
+    i=1
+    while i < num:
+        part = sckt.recv(BUFFER_SIZE)
+        data += part
+        i += 1
+    return data
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((TCP_IP, TCP_PORT))
+
+print('Connection created with server: ')
+print('Server IP: ', TCP_IP)
+print('Server PORT: ', TCP_PORT)
+print('\nPress CTRL-C at any moment to stop the send\n')
 
 # Ask for files list
 send_to_server(s, pc.START)
@@ -38,7 +53,7 @@ file_start = data.decode()
 print("< Server:", file_start)
 file_size = int(file_start.split(":")[1])
 send_to_server(s, pc.OK)
-data = s.recv(file_size)
+data = receive_file(s, file_size)
 save_file(data, filename)
 
 # End connection

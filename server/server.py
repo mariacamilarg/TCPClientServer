@@ -15,7 +15,7 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
     def handle(self):
 
         BUFFER_SIZE = 64
-        files_sizes = {'tiny.txt':184, 'small.txt':5120, 'medium.txt':20480, 'big.txt':51200}
+        files_sizes = {'tiny.txt':184, 'small.txt':5242880, 'medium.txt':20971520, 'big.txt':52428800}
 
         def send_to_client(cnn, msg):
             cnn.send(msg.encode())
@@ -23,7 +23,9 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
 
         # self.request is the TCP socket connected to the client
         conn = self.request
-        print('Connection created with client')
+        print('Connection created with client: ')
+        print(conn)
+        print()
 
         while True:
             data = conn.recv(BUFFER_SIZE)
